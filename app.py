@@ -3,6 +3,7 @@ import google.generativeai as genai
 import os
 import json
 from datetime import datetime
+import time
 
 # --- CONFIGURACIÓN DE API ---
 # Asegúrate de tener tu GOOGLE_API_KEY en los Secrets de Streamlit
