@@ -13,7 +13,25 @@ else:
     st.error("No se encontró la API Key de Google. Configúrala en los Secrets.")
     st.stop()
 
-PASSWORD_PADRE = os.getenv("PARENT_PASSWORD", "magia2025") 
+PASSWORD_PADRE = os.getenv("PARENT_PASSWORD", "magia2025")
+
+st.sidebar.subheader("🔍 Diagnóstico de Modelos")
+try:
+    available_models = [m.name for m in genai.list_models()]
+    # st.sidebar.write("Modelos encontrados:", available_models) # Descomenta para ver la lista completa
+    
+    # Verificar si los que necesitas existen en tu lista
+    if 'models/gemini-1.5-flash' in available_models:
+        st.sidebar.success("✅ Gemini 1.5 Flash: Disponible")
+    else:
+        st.sidebar.error("❌ Gemini 1.5 Flash: NO ENCONTRADO")
+
+    if 'models/imagen-3.0-generate-001' in available_models:
+        st.sidebar.success("✅ Imagen 3: Disponible")
+    else:
+        st.sidebar.warning("⚠️ Imagen 3: No disponible (Usando modo texto)")
+except Exception as e:
+    st.sidebar.error(f"Error al listar modelos: {e}")
 
 # --- INICIALIZACIÓN DE MODELOS DETALLADA ---
 try:
@@ -59,10 +77,11 @@ def validar_hada_de_colores(prompt):
         "'¡Oh, esa idea suena oscura! ¿Por qué no mejor pintamos un unicornio?'"
     )
     try:
-        response = model_hada.generate_content(f"{system_prompt}\n\nUsuario: {prompt}")
+        response = model_hada.generate_content(f"Responde APROBADO si esto es apto para niños: {prompt}")
         return response.text
     except Exception as e:
-        return f"Error técnico del Hada: {e}"
+        # Esto te mostrará si es un error de cuota, de región o de modelo inexistente
+        return f"ERROR TÉCNICO (404/API): {str(e)}"
 
 def generar_imagen_magica(prompt_niña):
     # Enriquecemos el prompt para estilo libro de cuentos
