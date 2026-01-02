@@ -13,7 +13,7 @@ genai.configure(api_key=api_key, transport='rest')
 # USAMOS LOS ALIASES INTELIGENTES
 # Estos nombres le dicen al SDK: "Busca la versión que funcione (v1 o v1beta)"
 NOMBRE_HADA = 'gemini-flash-latest' 
-NOMBRE_ARTISTA = 'gemini-2.0-flash' # Este modelo es el estándar para imágenes en 2026
+NOMBRE_ARTISTA = 'gemini-flash-latest' # Este modelo es el estándar para imágenes en 2026
 
 # --- INICIALIZACIÓN DE MODELOS ---
 try:
@@ -46,7 +46,7 @@ def validar_hada_de_colores(prompt):
 
 def generar_imagen_magica(prompt):
 # Enriquecemos el prompt para calidad artística
-    prompt_final = f"Children's book illustration style, vibrant colors, whimsical: {prompt}"
+    prompt_final = f"GENERATE_IMAGE: Children's book illustration style, vibrant colors, whimsical: {prompt}"
     
     # Manejo de cuota (429) con reintento automático
     for intento in range(2):
