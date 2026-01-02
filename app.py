@@ -15,18 +15,21 @@ else:
 
 PASSWORD_PADRE = os.getenv("PARENT_PASSWORD", "magia2025") 
 
-# --- INICIALIZACIÓN DE MODELOS ---
+# --- INICIALIZACIÓN DE MODELOS DETALLADA ---
 try:
-    # 1. El Hada (Gemini 1.5 Flash para texto)
+    # 1. El Hada (Texto)
     model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
     
     # 2. El Artista (Nano Banana / Imagen 3)
-    # Accedemos vía genai.ImageGenerationModel para evitar fallos de importación
+    # Intentamos cargar Nano Banana
     model_artista = genai.ImageGenerationModel("imagen-3.0-generate-001")
+    
+    # Prueba rápida de conexión
+    st.sidebar.success("✨ ¡Modelos despertados con éxito!")
 except Exception as e:
-    st.error("Error al despertar a los modelos mágicos.")
+    st.error(f"❌ No pudimos despertar la magia. Error: {e}")
+    st.info("Revisa si tu API Key es válida y si tienes acceso a Imagen 3 en AI Studio.")
     st.stop()
-
 # --- FUNCIONES INTERNAS ---
 
 def guardar_log(prompt, estado, imagen_b64=None):
