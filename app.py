@@ -4,22 +4,30 @@ import os
 import json
 from datetime import datetime
 import time
+# --- NUEVA LIBRERÍA PARA IMAGEN 4.0 ---
+import vertexai
+from vertexai.preview.vision_models import ImageGenerationModel
 
 # --- CONFIGURACIÓN DE API ---
-# Asegúrate de tener tu GOOGLE_API_KEY en los Secrets de Streamlit
 api_key = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
+project_id = st.secrets.get("GOOGLE_PROJECT_ID") # Necesitas tu ID de proyecto de Google Cloud
+
+# Configuración para Gemini (Hada)
 genai.configure(api_key=api_key, transport='rest')
 
-# USAMOS LOS ALIASES INTELIGENTES
-# Estos nombres le dicen al SDK: "Busca la versión que funcione (v1 o v1beta)"
-NOMBRE_HADA = 'gemini-flash-latest' 
-NOMBRE_ARTISTA = 'imagen-4.0-fast-generate-001' # Este modelo es el estándar para imágenes en 2026
+# Configuración para Imagen (Artista) vía Vertex AI
+vertexai.init(project=project_id, location="us-central1")
+
+NOMBRE_HADA = 'gemini-1.5-flash' 
+NOMBRE_ARTISTA = 'imagen-4.0-fast-generate-001' 
 
 # --- INICIALIZACIÓN DE MODELOS ---
 try:
-    # Inicializamos usando los nombres que el servidor mapea automáticamente
+    # El Hada sigue usando la API de GenerativeAI
     model_hada = genai.GenerativeModel(model_name=NOMBRE_HADA)
-    model_artista = genai.GenerativeModel(model_name=NOMBRE_ARTISTA)
+    
+    # El Artista ahora usa el SDK de Vertex AI
+    model_artista = ImageGenerationModel.from_pretrained(NOMBRE_ARTISTA)
 except Exception as e:
     st.error(f"Error al conectar con los modelos: {e}")
     st.stop()
@@ -31,7 +39,10 @@ def guardar_log(prompt, estado):
     if not os.path.exists("historial.json"):
         with open("historial.json", "w") as f: json.dump([], f)
     with open("historial.json", "r+") as f:
-        data = json.load(f)
+        try:
+            data = json.load(f)
+        except:
+            data = []
         data.append(log_entry)
         f.seek(0)
         json.dump(data, f, indent=4)
@@ -45,18 +56,23 @@ def validar_hada_de_colores(prompt):
     return response.text
 
 def generar_imagen_magica(prompt):
-# Enriquecemos el prompt para calidad artística
-    prompt_final = f"GENERATE_IMAGE: Children's book illustration style, vibrant colors, whimsical: {prompt}"
+    prompt_final = f"Children's book illustration style, vibrant colors, whimsical, high quality: {prompt}"
     
-    # Manejo de cuota (429) con reintento automático
     for intento in range(2):
         try:
-            # En 2026, Gemini 2.0 Flash genera la imagen directamente
-            response = model_artista.generate_content(prompt_final)
-            return response.candidates[0].content.parts[0].inline_data.data
+            # Cambio de método: Vertex AI usa 'generate_images'
+            # No se usa generate_content para modelos de imagen
+            response = model_artista.generate_images(
+                prompt=prompt_final,
+                number_of_images=1,
+                aspect_ratio="1:1"
+            )
+            # Retornamos los bytes directamente
+            return response[0]._image_bytes
         except Exception as e:
             if "429" in str(e):
-                time.sleep(15) # Espera obligatoria por cuota
+                st.info("El Hada está descansando un momento (Cuota)... reintentando.")
+                time.sleep(10)
                 continue
             raise e
 
@@ -79,34 +95,32 @@ if st.session_state.view == "nena":
 
     if st.button("✨ ¡Crear Magia! ✨"):
         if prompt:
-            # res_hada = validar_hada_de_colores(prompt)
-            # if "APROBADO" in res_hada.upper():
-            with st.spinner("🍌 Nano Banana está pintando para ti..."):
-                try:
-                    img_data = generar_imagen_magica(prompt)
-                    st.image(img_data, caption="¡Mira tu dibujo!")
-                    st.balloons()
-                    guardar_log(prompt, "Aprobado")
-                except Exception as e:
-                    # Aquí capturamos el error REAL (429, 404, 500, etc.)
-                    st.error(f"🔍 ERROR DETECTADO: {type(e).__name__}")
-                    st.error(f"📝 DETALLE TÉCNICO: {str(e)}")
-                    
-                    # Si es un error de cuota, lo explicamos sencillo
-                    if "429" in str(e):
-                        st.warning("Es un error de CUOTA (429). Google pide esperar unos segundos.")
-            # else:
-            #    st.warning(res_hada)
-            #    guardar_log(prompt, "Bloqueado")
+            # Primero validamos con el Hada
+            res_hada = validar_hada_de_colores(prompt)
+            
+            if "APROBADO" in res_hada.upper():
+                with st.spinner("🎨 Mi pincel mágico está trabajando..."):
+                    try:
+                        img_data = generar_imagen_magica(prompt)
+                        st.image(img_data, caption="¡Mira tu dibujo!")
+                        st.balloons()
+                        guardar_log(prompt, "Aprobado")
+                    except Exception as e:
+                        st.error(f"📝 ERROR TÉCNICO: {str(e)}")
+            else:
+                st.warning(res_hada)
+                guardar_log(prompt, f"Bloqueado: {res_hada}")
 
 elif st.session_state.view == "padre":
     st.title("🛡️ Panel Parental")
-    if st.text_input("Contraseña:", type="password") == os.getenv("PARENT_PASSWORD", "magia2025"):
+    pass_input = st.text_input("Contraseña:", type="password")
+    if pass_input == "magia2025":
         if os.path.exists("historial.json"):
             with open("historial.json", "r") as f:
                 logs = json.load(f)
                 for l in reversed(logs):
-                    st.write(f"**{l['fecha']}** - {l['prompt']} ({l['estado']})")
+                    color = "🟢" if "Aprobado" in l['estado'] else "🔴"
+                    st.write(f"{color} **{l['fecha']}**: {l['prompt']}")
 
 st.sidebar.markdown("---")
 if st.sidebar.button("Ir a Vista Padres"): st.session_state.view = "padre"
