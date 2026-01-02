@@ -12,7 +12,7 @@ genai.configure(api_key=api_key)
 # --- INICIALIZACIÓN DE MODELOS (Basado en tu lista real) ---
 try:
     # El Hada de los Colores - Usando Gemini 2.5 Flash (Fila 1 de tu lista)
-    model_hada = genai.GenerativeModel('models/gemini-2.5-flash')
+    model_hada = genai.GenerativeModel('models/gemini-flash-latest')
     
     # El Artista Mágico - Usando Nano Banana Pro (Fila 31 de tu lista)
     model_artista = genai.GenerativeModel('models/gemini-2.0-flash-exp-image-generation')
