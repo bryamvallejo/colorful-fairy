@@ -1,84 +1,102 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-
-# --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Diagnóstico de Modelos", page_icon="🔍")
-
-st.title("🔍 Explorador de Modelos Mágicos")
-st.info("Este código te ayudará a ver exactamente qué modelos 've' tu API Key.")
+import json
+from datetime import datetime
 
 # --- CONFIGURACIÓN DE API ---
-# Intentamos obtener la clave de Secrets o Variables de Entorno
+# Asegúrate de tener tu GOOGLE_API_KEY en los Secrets de Streamlit
 api_key = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
-
-if not api_key:
-    st.error("❌ No se encontró la API Key. Por favor, configúrala en los Secrets de Streamlit.")
-    st.code("GOOGLE_API_KEY = 'tu_clave_aqui'", language="toml")
-    st.stop()
-
 genai.configure(api_key=api_key)
 
-# --- LISTAR MODELOS ---
-st.write("### 📜 Modelos disponibles para tu clave:")
-
+# --- INICIALIZACIÓN DE MODELOS (Basado en tu lista real) ---
 try:
-    modelos = list(genai.list_models())
+    # El Hada de los Colores - Usando Gemini 2.5 Flash (Fila 1 de tu lista)
+    model_hada = genai.GenerativeModel('models/gemini-2.5-flash')
     
-    if not modelos:
-        st.warning("⚠️ La API no devolvió ningún modelo. Es posible que tu clave sea inválida o no tenga permisos.")
-    else:
-        # Creamos una tabla para que sea fácil de leer
-        datos_modelos = []
-        for m in modelos:
-            datos_modelos.append({
-                "Nombre Técnico": m.name,
-                "Versión": m.version,
-                "Descripción": m.description,
-                "Métodos Soportados": ", ".join(m.supported_generation_methods)
-            })
-        
-        st.table(datos_modelos)
-        
-        # --- VERIFICACIÓN ESPECÍFICA ---
-        nombres = [m.name for m in modelos]
-        
-        st.write("### ✅ Verificación de requisitos:")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if "models/gemini-1.5-flash" in nombres:
-                st.success("Gemini 1.5 Flash está disponible.")
-            else:
-                st.error("Gemini 1.5 Flash NO encontrado.")
-                
-        with col2:
-            # Buscamos cualquier variante de Imagen 3
-            imagen_disponible = any("imagen" in n.lower() for n in nombres)
-            if imagen_disponible:
-                st.success("Un modelo de Imagen está disponible.")
-            else:
-                st.error("Imagen 3 (Nano Banana) NO encontrado.")
-
+    # El Artista Mágico - Usando Nano Banana Pro (Fila 31 de tu lista)
+    # En esta versión, Nano Banana se llama como un modelo generativo normal
+    model_artista = genai.GenerativeModel('models/nano-banana-pro-preview')
 except Exception as e:
-    st.error("Fallo total al intentar conectar con Google AI:")
-    st.exception(e)
+    st.error(f"Error al conectar con los modelos: {e}")
+    st.stop()
 
-# --- BOTÓN DE PRUEBA RÁPIDA ---
-st.write("---")
-st.write("### ⚡ Prueba de ejecución rápida")
-if st.button("Probar saludo del Hada"):
+# --- FUNCIONES ---
+
+def guardar_log(prompt, estado):
+    log_entry = {"fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "prompt": prompt, "estado": estado}
+    if not os.path.exists("historial.json"):
+        with open("historial.json", "w") as f: json.dump([], f)
+    with open("historial.json", "r+") as f:
+        data = json.load(f)
+        data.append(log_entry)
+        f.seek(0)
+        json.dump(data, f, indent=4)
+
+def validar_hada_de_colores(prompt):
+    system_prompt = (
+        "Eres el 'Hada de los Colores'. Si el mensaje es seguro para una niña, responde solo 'APROBADO'. "
+        "Si es triste o feo, responde con un consejo dulce."
+    )
+    response = model_hada.generate_content(f"{system_prompt}\n\nUsuario: {prompt}")
+    return response.text
+
+def generar_imagen_magica(prompt_niña):
+    # Enriquecemos para estilo artístico infantil
+    prompt_final = f"Children's book illustration, vibrant colors, magical, high quality digital art: {prompt_niña}"
+    
+    # Nano Banana en 2026 devuelve la imagen directamente en el contenido
+    response = model_artista.generate_content(prompt_final)
+    
+    # Extraemos los bytes de la imagen
     try:
-        # Intentamos usar el nombre que debería funcionar
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
-        response = model.generate_content("Saluda como un hada mágica de forma muy breve.")
-        st.write("**Respuesta del Hada:**", response.text)
-    except Exception as e:
-        st.error(f"Error al intentar generar contenido: {e}")
+        return response.candidates[0].content.parts[0].inline_data.data
+    except:
+        # Si falla el inline, intentamos el formato de objeto imagen
+        return response.candidates[0].content.parts[0].image
 
-st.sidebar.markdown("""
-**Instrucciones:**
-1. Copia los nombres técnicos que aparezcan en la tabla.
-2. Esos son los nombres que debemos usar en `model_hada` y `model_artista`.
-""")
+# --- INTERFAZ ---
+st.set_page_config(page_title="Mundo Mágico 2026", page_icon="🎨")
+
+st.markdown("""
+    <style>
+    .stApp { background-color: #fdf2f8; }
+    h1 { color: #db2777; font-family: 'Comic Sans MS', cursive; }
+    .stButton>button { background-color: #db2777; color: white; border-radius: 20px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+if "view" not in st.session_state: st.session_state.view = "nena"
+
+if st.session_state.view == "nena":
+    st.title("🎨 Mi Estudio de Arte Mágico")
+    prompt = st.text_input("¿Qué quieres que el Hada dibuje hoy?", placeholder="Un gato en la luna...")
+
+    if st.button("✨ ¡Crear Magia! ✨"):
+        if prompt:
+            res_hada = validar_hada_de_colores(prompt)
+            if "APROBADO" in res_hada.upper():
+                with st.spinner("🍌 Nano Banana está pintando para ti..."):
+                    try:
+                        img_data = generar_imagen_magica(prompt)
+                        st.image(img_data, caption="¡Mira tu dibujo!")
+                        st.balloons()
+                        guardar_log(prompt, "Aprobado")
+                    except Exception as e:
+                        st.error(f"¡Ups! Se acabó la purpurina: {e}")
+            else:
+                st.warning(res_hada)
+                guardar_log(prompt, "Bloqueado")
+
+elif st.session_state.view == "padre":
+    st.title("🛡️ Panel Parental")
+    if st.text_input("Contraseña:", type="password") == os.getenv("PARENT_PASSWORD", "magia2025"):
+        if os.path.exists("historial.json"):
+            with open("historial.json", "r") as f:
+                logs = json.load(f)
+                for l in reversed(logs):
+                    st.write(f"**{l['fecha']}** - {l['prompt']} ({l['estado']})")
+
+st.sidebar.markdown("---")
+if st.sidebar.button("Ir a Vista Padres"): st.session_state.view = "padre"
+if st.sidebar.button("Volver a Galería"): st.session_state.view = "nena"
