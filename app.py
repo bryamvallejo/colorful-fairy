@@ -11,7 +11,16 @@ from datetime import datetime
 PASSWORD_PADRE = os.getenv("PARENT_PASSWORD", "magia2025") 
 
 # Configuración del API
-genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+try:
+    # Hada de los Colores (Texto)
+    model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
+    
+    # Artista (Nano Banana / Imagen 3)
+    # Lo llamamos directamente desde genai para evitar el ImportError
+    model_artista = genai.ImageGenerationModel("imagen-3.0-generate-001")
+except Exception as e:
+    st.error("Error al despertar a los modelos mágicos.")
+    st.stop()
 
 # Filtros de seguridad de nivel de sistema (Google)
 SAFETY_SETTINGS = [
@@ -28,8 +37,8 @@ SAFETY_SETTINGS = [
 # model_imagen = genai.GenerativeModel('gemini-1.5-flash') # El SDK usa el mismo punto para llamar a Imagen 3
 
 # Cambia estas líneas en tu app.py
-model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
-model_artista = ImageGenerationModel("imagen-3.0-generate-001")
+# model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
+# model_artista = ImageGenerationModel("imagen-3.0-generate-001")
 # --- FUNCIONES INTERNAS ---
 
 def guardar_log(prompt, estado, imagen_b64=None):
@@ -60,20 +69,17 @@ def validar_hada_de_colores(prompt):
     return response.text
 
 def generar_imagen_magica(prompt_niña):
-    # Enriquecemos el prompt para estilo infantil
-    prompt_final = f"Children's book illustration style, vibrant colors, whimsical, safe for kids: {prompt_niña}"
+    # Enriquecemos el prompt
+    prompt_final = f"Children's book illustration, vibrant pastel colors, magical and safe for kids: {prompt_niña}"
     
-    # Generamos la imagen
+    # Generar
     response = model_artista.generate_images(
         prompt=prompt_final,
         number_of_images=1,
-        aspect_ratio="1:1",
-        safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
-        person_generation="DONT_ALLOW"
     )
     
-    # Retornamos la primera imagen generada
-    return response.images[0]
+    # Retornar la imagen (formato PIL)
+    return response.images[0].image
 
 # --- INTERFAZ ---
 
