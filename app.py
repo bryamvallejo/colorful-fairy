@@ -11,8 +11,8 @@ genai.configure(api_key=api_key, transport='rest')
 
 # Nombres exactos sin prefijo manual para evitar el error 404
 # Basado en tu lista, estos son los más seguros:
-NOMBRE_HADA = 'gemini-1.5-flash' 
-NOMBRE_ARTISTA = 'gemini-2.0-flash'
+NOMBRE_HADA = 'models/gemini-1.5-flash' 
+NOMBRE_ARTISTA = 'models/gemini-2.0-flash'
 
 # --- INICIALIZACIÓN DE MODELOS (Basado en tu lista real) ---
 try:
