@@ -1,5 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
+from google.generativeai import ImageGenerationModel
 import os
 import json
 import base64
@@ -9,8 +10,8 @@ from datetime import datetime
 # Cambia esto por tu contraseña preferida para el panel de padres
 PASSWORD_PADRE = os.getenv("PARENT_PASSWORD", "magia2025") 
 
-# Configuración del API de Google
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+# Configuración del API
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # Filtros de seguridad de nivel de sistema (Google)
 SAFETY_SETTINGS = [
@@ -28,8 +29,7 @@ SAFETY_SETTINGS = [
 
 # Cambia estas líneas en tu app.py
 model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
-model_imagen = genai.GenerativeModel('models/imagen-3.0-generate-001')
-
+model_artista = ImageGenerationModel("imagen-3.0-generate-001")
 # --- FUNCIONES INTERNAS ---
 
 def guardar_log(prompt, estado, imagen_b64=None):
@@ -59,6 +59,22 @@ def validar_hada_de_colores(prompt):
     response = model_hada.generate_content(f"{system_prompt}\n\nUsuario: {prompt}")
     return response.text
 
+def generar_imagen_magica(prompt_niña):
+    # Enriquecemos el prompt para estilo infantil
+    prompt_final = f"Children's book illustration style, vibrant colors, whimsical, safe for kids: {prompt_niña}"
+    
+    # Generamos la imagen
+    response = model_artista.generate_images(
+        prompt=prompt_final,
+        number_of_images=1,
+        aspect_ratio="1:1",
+        safety_filter_level="BLOCK_MEDIUM_AND_ABOVE",
+        person_generation="DONT_ALLOW"
+    )
+    
+    # Retornamos la primera imagen generada
+    return response.images[0]
+
 # --- INTERFAZ ---
 
 st.set_page_config(page_title="Mundo Mágico de Imágenes", page_icon="🎨")
@@ -81,28 +97,30 @@ if st.session_state.view == "nena":
     prompt = st.text_input("¿Qué quieres que dibuje hoy?", placeholder="Ej. Un perrito con alas de mariposa")
 
     if st.button("✨ ¡Crear Magia! ✨"):
-        res_hada = validar_hada_de_colores(prompt)
-        
-        if "APROBADO" in res_hada:
-            with st.spinner("El Hada está buscando sus pinceles..."):
-                try:
-                    # Generación con Nano Banana / Imagen 3
-                    # Nota: El prompt se enriquece para asegurar calidad infantil
-                    prompt_magico = f"Estilo libro de cuentos infantil, alta calidad, colorido: {prompt}"
-                    response = model_imagen.generate_content(prompt_magico)
-                    
-                    # Simulación de visualización (en el API real obtienes los bytes)
-                    # Aquí mostramos un placeholder si no hay imagen real configurada en tu región
-                    st.success("¡Mira lo que creaste!")
-                    st.image("https://placehold.co/600x400/png?text=Imagen+Magica+Generada", caption=prompt)
-                    
-                    guardar_log(prompt, "Aprobado", "imagen_base64_aqui")
-                except Exception as e:
-                    st.error("¡Ups! Se acabó la purpurina. Intenta otra vez.")
-                    guardar_log(prompt, f"Error: {str(e)}")
+        if prompt:
+            # 1. El Hada valida el texto
+            res_hada = validar_hada_de_colores(prompt)
+            
+            if "APROBADO" in res_hada.upper():
+                with st.spinner("🍌 Nano Banana está pintando..."):
+                    try:
+                        # 2. Nano Banana crea la imagen
+                        imagen_resultado = generar_imagen_magica(prompt)
+                        
+                        # 3. Mostrar la imagen (el objeto imagen de Google es compatible con st.image)
+                        st.image(imagen_resultado._pil_image, caption="¡Tu dibujo mágico!")
+                        st.balloons()
+                        
+                        # Guardar en log (opcional)
+                        guardar_log(prompt, "Aprobado")
+                        
+                    except Exception as e:
+                        st.error("¡Ups! Se acabó la purpurina técnica.")
+                        st.caption(f"Error: {e}")
+            else:
+                st.warning(res_hada)
         else:
-            st.warning(res_hada)
-            guardar_log(prompt, "Bloqueado por el Hada")
+            st.info("Escribe algo para empezar la magia.")
 
 # --- VISTA DEL PADRE ---
 elif st.session_state.view == "padre":
