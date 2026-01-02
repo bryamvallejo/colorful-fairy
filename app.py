@@ -88,7 +88,13 @@ if st.session_state.view == "nena":
                     st.balloons()
                     guardar_log(prompt, "Aprobado")
                 except Exception as e:
-                    st.error(f"¡Ups! Se acabó la purpurina: {e}")
+                    # Aquí capturamos el error REAL (429, 404, 500, etc.)
+                    st.error(f"🔍 ERROR DETECTADO: {type(e).__name__}")
+                    st.error(f"📝 DETALLE TÉCNICO: {str(e)}")
+                    
+                    # Si es un error de cuota, lo explicamos sencillo
+                    if "429" in str(e):
+                        st.warning("Es un error de CUOTA (429). Google pide esperar unos segundos.")
             # else:
             #    st.warning(res_hada)
             #    guardar_log(prompt, "Bloqueado")
