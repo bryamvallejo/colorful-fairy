@@ -15,8 +15,7 @@ try:
     model_hada = genai.GenerativeModel('models/gemini-2.5-flash')
     
     # El Artista Mágico - Usando Nano Banana Pro (Fila 31 de tu lista)
-    # En esta versión, Nano Banana se llama como un modelo generativo normal
-    model_artista = genai.GenerativeModel('models/nano-banana-pro-preview')
+    model_artista = genai.GenerativeModel('models/gemini-2.0-flash-exp-image-generation')
 except Exception as e:
     st.error(f"Error al conectar con los modelos: {e}")
     st.stop()
