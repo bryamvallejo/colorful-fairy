@@ -7,7 +7,7 @@ from datetime import datetime
 # --- CONFIGURACIÓN DE API ---
 # Asegúrate de tener tu GOOGLE_API_KEY en los Secrets de Streamlit
 api_key = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
-genai.configure(api_key=api_key)
+genai.configure(api_key=api_key, transport='rest')
 
 # Nombres exactos sin prefijo manual para evitar el error 404
 # Basado en tu lista, estos son los más seguros:
