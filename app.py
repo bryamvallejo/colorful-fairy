@@ -28,7 +28,7 @@ SAFETY_SETTINGS = [
 
 # Cambia estas líneas en tu app.py
 model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
-model_imagen = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+model_imagen = genai.GenerativeModel('models/imagen-3.0-generate-001')
 
 # --- FUNCIONES INTERNAS ---
 
