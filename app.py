@@ -9,15 +9,14 @@ from datetime import datetime
 api_key = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=api_key, transport='rest')
 
-# Nombres exactos sin prefijo manual para evitar el error 404
-# Basado en tu lista, estos son los más seguros:
-NOMBRE_HADA = 'models/gemini-1.5-flash' 
-NOMBRE_ARTISTA = 'models/gemini-2.0-flash'
+# USAMOS LOS ALIASES INTELIGENTES
+# Estos nombres le dicen al SDK: "Busca la versión que funcione (v1 o v1beta)"
+NOMBRE_HADA = 'gemini-flash-latest' 
+NOMBRE_ARTISTA = 'gemini-2.0-flash' # Este modelo es el estándar para imágenes en 2026
 
-# --- INICIALIZACIÓN DE MODELOS (Basado en tu lista real) ---
+# --- INICIALIZACIÓN DE MODELOS ---
 try:
-
-    # Inicializamos usando solo el ID del modelo
+    # Inicializamos usando los nombres que el servidor mapea automáticamente
     model_hada = genai.GenerativeModel(model_name=NOMBRE_HADA)
     model_artista = genai.GenerativeModel(model_name=NOMBRE_ARTISTA)
 except Exception as e:
