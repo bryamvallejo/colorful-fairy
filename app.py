@@ -13,7 +13,7 @@ genai.configure(api_key=api_key, transport='rest')
 # USAMOS LOS ALIASES INTELIGENTES
 # Estos nombres le dicen al SDK: "Busca la versión que funcione (v1 o v1beta)"
 NOMBRE_HADA = 'gemini-flash-latest' 
-NOMBRE_ARTISTA = 'gemini-2.0-flash-exp-image-generation' # Este modelo es el estándar para imágenes en 2026
+NOMBRE_ARTISTA = 'imagen-4.0-fast-generate-001' # Este modelo es el estándar para imágenes en 2026
 
 # --- INICIALIZACIÓN DE MODELOS ---
 try:
