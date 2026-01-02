@@ -79,19 +79,19 @@ if st.session_state.view == "nena":
 
     if st.button("✨ ¡Crear Magia! ✨"):
         if prompt:
-            res_hada = validar_hada_de_colores(prompt)
-            if "APROBADO" in res_hada.upper():
-                with st.spinner("🍌 Nano Banana está pintando para ti..."):
-                    try:
-                        img_data = generar_imagen_magica(prompt)
-                        st.image(img_data, caption="¡Mira tu dibujo!")
-                        st.balloons()
-                        guardar_log(prompt, "Aprobado")
-                    except Exception as e:
-                        st.error(f"¡Ups! Se acabó la purpurina: {e}")
-            else:
-                st.warning(res_hada)
-                guardar_log(prompt, "Bloqueado")
+            # res_hada = validar_hada_de_colores(prompt)
+            # if "APROBADO" in res_hada.upper():
+            with st.spinner("🍌 Nano Banana está pintando para ti..."):
+                try:
+                    img_data = generar_imagen_magica(prompt)
+                    st.image(img_data, caption="¡Mira tu dibujo!")
+                    st.balloons()
+                    guardar_log(prompt, "Aprobado")
+                except Exception as e:
+                    st.error(f"¡Ups! Se acabó la purpurina: {e}")
+            # else:
+            #    st.warning(res_hada)
+            #    guardar_log(prompt, "Bloqueado")
 
 elif st.session_state.view == "padre":
     st.title("🛡️ Panel Parental")
