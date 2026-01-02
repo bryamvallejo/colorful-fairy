@@ -1,12 +1,9 @@
 import streamlit as st
 import google.generativeai as genai
-from dotenv import load_dotenv
-import os
 import json
 import base64
 from datetime import datetime
 
-load_dotenv() # Esto carga las variables del archivo .env
 # --- CONFIGURACIÓN DE SEGURIDAD ---
 # Cambia esto por tu contraseña preferida para el panel de padres
 PASSWORD_PADRE = os.getenv("PARENT_PASSWORD", "magia2025") 
