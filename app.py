@@ -22,9 +22,13 @@ SAFETY_SETTINGS = [
 
 # Inicialización de modelos
 # Gemini Flash para el filtro de texto (Hada de los Colores)
-model_hada = genai.GenerativeModel('gemini-1.5-flash')
+# model_hada = genai.GenerativeModel('gemini-1.5-flash')
 # Imagen 3 para la generación de imágenes
-model_imagen = genai.GenerativeModel('gemini-1.5-flash') # El SDK usa el mismo punto para llamar a Imagen 3
+# model_imagen = genai.GenerativeModel('gemini-1.5-flash') # El SDK usa el mismo punto para llamar a Imagen 3
+
+# Cambia estas líneas en tu app.py
+model_hada = genai.GenerativeModel('gemini-1.5-flash-latest')
+model_imagen = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 # --- FUNCIONES INTERNAS ---
 
