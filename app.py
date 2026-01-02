@@ -9,13 +9,17 @@ from datetime import datetime
 api_key = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=api_key)
 
+# Nombres exactos sin prefijo manual para evitar el error 404
+# Basado en tu lista, estos son los más seguros:
+NOMBRE_HADA = 'gemini-1.5-flash' 
+NOMBRE_ARTISTA = 'gemini-2.0-flash'
+
 # --- INICIALIZACIÓN DE MODELOS (Basado en tu lista real) ---
 try:
-    # El Hada: Usamos la versión estable de Flash 1.5
-    model_hada = genai.GenerativeModel('models/gemini-1.5-flash')
-    
-    # El Artista: Usamos Flash 2.0 (que es multimodal y genera imágenes)
-    model_artista = genai.GenerativeModel('models/gemini-2.0-flash')
+
+    # Inicializamos usando solo el ID del modelo
+    model_hada = genai.GenerativeModel(model_name=NOMBRE_HADA)
+    model_artista = genai.GenerativeModel(model_name=NOMBRE_ARTISTA)
 except Exception as e:
     st.error(f"Error al conectar con los modelos: {e}")
     st.stop()
@@ -40,19 +44,21 @@ def validar_hada_de_colores(prompt):
     response = model_hada.generate_content(f"{system_prompt}\n\nUsuario: {prompt}")
     return response.text
 
-def generar_imagen_magica(prompt_niña):
-    # Enriquecemos para estilo artístico infantil
-    prompt_final = f"Children's book illustration, vibrant colors, magical, high quality digital art: {prompt_niña}"
+def generar_imagen_magica(prompt):
+# Enriquecemos el prompt para calidad artística
+    prompt_final = f"Children's book illustration style, vibrant colors, whimsical: {prompt}"
     
-    # Nano Banana en 2026 devuelve la imagen directamente en el contenido
-    response = model_artista.generate_content(prompt_final)
-    
-    # Extraemos los bytes de la imagen
-    try:
-        return response.candidates[0].content.parts[0].inline_data.data
-    except:
-        # Si falla el inline, intentamos el formato de objeto imagen
-        return response.candidates[0].content.parts[0].image
+    # Manejo de cuota (429) con reintento automático
+    for intento in range(2):
+        try:
+            # En 2026, Gemini 2.0 Flash genera la imagen directamente
+            response = model_artista.generate_content(prompt_final)
+            return response.candidates[0].content.parts[0].inline_data.data
+        except Exception as e:
+            if "429" in str(e):
+                time.sleep(15) # Espera obligatoria por cuota
+                continue
+            raise e
 
 # --- INTERFAZ ---
 st.set_page_config(page_title="Mundo Mágico 2026", page_icon="🎨")
