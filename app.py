@@ -1,36 +1,43 @@
 import streamlit as st
-import google.generativeai as genai
+
+from google import genai
+from google.genai import types
+
 import os
 import json
 from datetime import datetime
 import time
 # --- NUEVA LIBRERÍA PARA IMAGEN 4.0 ---
-import vertexai
-from vertexai.preview.vision_models import ImageGenerationModel
+#import vertexai
+#from vertexai.preview.vision_models import ImageGenerationModel
 
 # --- CONFIGURACIÓN DE API ---
 api_key = st.secrets.get("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY")
-project_id = st.secrets.get("GOOGLE_PROJECT_ID") # Necesitas tu ID de proyecto de Google Cloud
+#project_id = st.secrets.get("GOOGLE_PROJECT_ID") # Necesitas tu ID de proyecto de Google Cloud
 
 # Configuración para Gemini (Hada)
-genai.configure(api_key=api_key, transport='rest')
+# genai.configure(api_key=api_key, transport='rest')
+#genai.configure(api_key=api_key)
+
+client = genai.Client(api_key=api_key)
 
 # Configuración para Imagen (Artista) vía Vertex AI
-vertexai.init(project=project_id, location="us-central1")
+#vertexai.init(project=project_id, location="us-central1")
 
-NOMBRE_HADA = 'gemini-1.5-flash' 
-NOMBRE_ARTISTA = 'imagen-4.0-fast-generate-001' 
+NOMBRE_HADA = 'gemini-2.5-flash' 
+NOMBRE_ARTISTA = 'gemini-2.5-flash-image' 
 
 # --- INICIALIZACIÓN DE MODELOS ---
-try:
-    # El Hada sigue usando la API de GenerativeAI
-    model_hada = genai.GenerativeModel(model_name=NOMBRE_HADA)
-    
-    # El Artista ahora usa el SDK de Vertex AI
-    model_artista = ImageGenerationModel.from_pretrained(NOMBRE_ARTISTA)
-except Exception as e:
-    st.error(f"Error al conectar con los modelos: {e}")
-    st.stop()
+#try:
+#    # El Hada sigue usando la API de GenerativeAI
+#    model_hada = genai.GenerativeModel(model_name=NOMBRE_HADA)
+#    
+#    # El Artista ahora usa el SDK de Vertex AI
+#    model_artista = genai.ImageGenerationModel(model_name=NOMBRE_ARTISTA)
+#    model = genai.ImageGenerationModel(model_name=NOMBRE_ARTISTA)
+#except Exception as e:
+#    st.error(f"Error al conectar con los modelos: {e}")
+#    st.stop()
 
 # --- FUNCIONES ---
 
@@ -52,29 +59,53 @@ def validar_hada_de_colores(prompt):
         "Eres el 'Hada de los Colores'. Si el mensaje es seguro para una niña, responde solo 'APROBADO'. "
         "Si es triste o feo, responde con un consejo dulce."
     )
-    response = model_hada.generate_content(f"{system_prompt}\n\nUsuario: {prompt}")
+    #response = model_hada.generate_content(f"{system_prompt}\n\nUsuario: {prompt}")
+    response = client.models.generate_content(
+        model=NOMBRE_HADA, 
+        contents= f"{system_prompt}\n\nUsuario: {prompt}"
+    )
+
+    print(response)
     return response.text
 
 def generar_imagen_magica(prompt):
-    prompt_final = f"Children's book illustration style, vibrant colors, whimsical, high quality: {prompt}"
-    
-    for intento in range(2):
-        try:
-            # Cambio de método: Vertex AI usa 'generate_images'
-            # No se usa generate_content para modelos de imagen
-            response = model_artista.generate_images(
-                prompt=prompt_final,
-                number_of_images=1,
-                aspect_ratio="1:1"
-            )
-            # Retornamos los bytes directamente
-            return response[0]._image_bytes
-        except Exception as e:
-            if "429" in str(e):
-                st.info("El Hada está descansando un momento (Cuota)... reintentando.")
-                time.sleep(10)
-                continue
-            raise e
+    prompt_final = f"generate image: {prompt}"
+    print('solicitando imagen ...')
+    try:
+        # Cambio de método: Vertex AI usa 'generate_images'
+        # No se usa generate_content para modelos de imagen
+        # response = client.models.generate_images(
+        #    model=NOMBRE_ARTISTA,
+        #    prompt=prompt_final,
+        #    config=types.GenerateImagesConfig(
+        #        number_of_images=1,
+        #        aspect_ratio="1:1"
+        #    )
+        #)
+
+        response = client.models.generate_content(
+                        model=NOMBRE_ARTISTA,
+                        contents=prompt_final,
+                    )
+        
+        print(response)
+        candidate = response.candidates[0]
+
+        # 2. Buscamos en las 'parts' del contenido la que tenga los datos binarios (inline_data)
+        for part in candidate.content.parts:
+            if part.inline_data:
+                # Retornamos los bytes del objeto Blob
+                return part.inline_data.data
+        
+        return None
+
+    except Exception as e:
+        print(e)
+        if "429" in str(e):
+            st.info("El Hada está descansando un momento (Cuota)... reintentando.")
+            # time.sleep(10)
+            #continue
+        raise e
 
 # --- INTERFAZ ---
 st.set_page_config(page_title="Mundo Mágico 2026", page_icon="🎨")
